@@ -179,8 +179,26 @@ class PointCloudOptimizer(BasePCOptimizer):
         # project to world frame
         return geotrf(im_poses, rel_ptmaps)
 
+    def depth_to_pts3d_custom(self, depth_maps, poses):
+        # Get depths and  projection params if not provided
+        focals = self.get_focals()
+        pp = self.get_principal_points()
+        im_poses = poses #self.get_im_poses()
+        depth = depth_maps #self.get_depthmaps(raw=True)
+
+        # get pointmaps in camera frame
+        rel_ptmaps = _fast_depthmap_to_pts3d(depth, self._grid, focals, pp=pp)
+        # project to world frame
+        return geotrf(im_poses, rel_ptmaps)
+
     def get_pts3d(self, raw=False):
         res = self.depth_to_pts3d()
+        if not raw:
+            res = [dm[:h*w].view(h, w, 3) for dm, (h, w) in zip(res, self.imshapes)]
+        return res
+
+    def get_pts3d_custom(self, pts3d, raw=False):
+        res = pts3d #self.depth_to_pts3d()
         if not raw:
             res = [dm[:h*w].view(h, w, 3) for dm, (h, w) in zip(res, self.imshapes)]
         return res
